@@ -3,82 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jobs Dashboard</title>
+  <title>Job Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root {
-      --background: hsl(224, 71%, 4%);
-      --foreground: hsl(210, 40%, 98%);
-      --primary: hsl(210, 40%, 98%);
-      --accent: hsl(197, 71%, 73%);
-      --card: hsl(224, 71%, 9%);
-      --secondary: hsl(224, 71%, 14%);
-      --muted-foreground: hsl(210, 40%, 80%);
-    }
-    body { background-color: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; }
-    a:hover { color: var(--accent); }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-RXf+QSDCUqL/mGz1ClyiHf96bK65hNRGOe4+zYlIYJ0M7Rj+2Q2Q7qZT3GdfQG4iZ5Xk+a1VQ6EqwC7n1b+9A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
-<body class="min-h-screen p-6">
-  <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6 text-primary">Últimas Ofertas de Trabajo</h1>
-    <div id="jobs-list" class="space-y-4"></div>
+<body class="bg-gray-900 text-gray-100">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 id="dashboard-title" class="text-4xl font-bold mb-8 text-center">Vacantes</h1>
+    <div id="jobs-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const type = params.get('type') || 'it';
-    const jsonFile = type === 'marketing' ? 'jobsMarketing.json' : 'jobsIt.json';
-
     async function loadJobs() {
-      const res = await fetch(jsonFile);
-      let jobs = await res.json();
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('type') || 'it'; // default IT
 
-      // Ajuste según tipo
-      if (type === 'it') {
-        // IT JSON parse
-        jobs = jobs.flatMap(item => {
-          let txt = item.text || '';
-          txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
-          try {
-            const parsed = JSON.parse(txt);
-            return Array.isArray(parsed) ? parsed : [];
-          } catch(e) { return []; }
+      const fileMap = {
+        it: 'jobsIt.json',
+        marketing: 'jobsMarketing.json'
+      };
+
+      const fileName = fileMap[type] || 'jobsIt.json';
+      document.getElementById('dashboard-title').textContent =
+        type === 'marketing' ? 'Vacantes de Marketing' : 'Vacantes de IT / IA';
+
+      try {
+        const res = await fetch(fileName);
+        const jobs = await res.json();
+        const container = document.getElementById('jobs-list');
+        container.innerHTML = '';
+
+        jobs.forEach(job => {
+          const div = document.createElement('div');
+          div.className = "bg-gray-800 p-5 rounded-xl shadow-lg hover:shadow-2xl transition duration-300 flex flex-col justify-between";
+
+          // Tecnologías como badges
+          let techBadges = '';
+          if(job.technologies) {
+            techBadges = job.technologies.map(tech => `
+              <span class="bg-cyan-600 text-gray-100 text-xs px-2 py-1 rounded-full mr-1 mb-1 inline-block">${tech}</span>
+            `).join('');
+          } else if(job.skills) {
+            techBadges = job.skills.map(skill => `
+              <span class="bg-green-600 text-gray-100 text-xs px-2 py-1 rounded-full mr-1 mb-1 inline-block">${skill}</span>
+            `).join('');
+          }
+
+          div.innerHTML = `
+            <div>
+              <a href="${job.url || job.applyUrl || '#'}" target="_blank" class="text-cyan-400 font-bold text-lg hover:underline">${job.title}</a>
+              <p class="text-gray-300 font-medium mt-1">${job.company}</p>
+              <p class="mt-2 text-gray-400 text-sm">${job.roleSummary || job.description || ''}</p>
+            </div>
+            <div class="mt-3">
+              ${techBadges}
+            </div>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>${job.matchPercentage ? 'Match: ' + job.matchPercentage + '%' : ''}</span>
+              <span>${job.remote ? 'Remote' : job.location || ''}</span>
+            </div>
+            <p class="mt-2 text-gray-400 text-xs italic">${job.matchReason || ''}</p>
+          `;
+          container.appendChild(div);
         });
-      } else {
-        // Marketing JSON
-        jobs = jobs.map(job => ({
-          title: job.title || job.text || '',
-          company: job.company || '',
-          url: job.applyUrl || '#',
-          technologies: (job.skills && job.skills.length ? job.skills : job.tags) || [],
-          matchPercentage: job.score || '-',
-          roleSummary: job.description ? job.description.replace(/<[^>]+>/g, '').substring(0, 200) + '...' : ''
-        }));
+      } catch (err) {
+        console.error('Error cargando jobs:', err);
+        document.getElementById('jobs-list').innerHTML = '<p class="text-red-500">No se pudieron cargar las vacantes.</p>';
       }
-
-      // Eliminar duplicados
-      const uniqueJobs = [...new Map(jobs.map(job => [job.title + job.company, job])).values()];
-
-      const container = document.getElementById('jobs-list');
-      container.innerHTML = '';
-
-      uniqueJobs.forEach(job => {
-        const div = document.createElement('div');
-        div.className = "bg-card p-4 rounded shadow hover:shadow-lg transition transform hover:-translate-y-1";
-        div.innerHTML = `
-          <a href="${job.url || '#'}" target="_blank" class="text-accent font-semibold text-lg hover:underline">
-            ${job.title}
-          </a>
-          <p class="text-secondary mt-1">${job.company}</p>
-          <p class="text-muted-foreground mt-1 text-sm">Match: ${job.matchPercentage || '-'}</p>
-          <p class="mt-2 text-foreground">${job.roleSummary || ''}</p>
-          <div class="mt-2 flex flex-wrap gap-2">
-            ${(job.technologies || []).map(tech => `<span class="px-2 py-1 bg-secondary text-accent rounded-full text-xs">${tech}</span>`).join('')}
-          </div>
-        `;
-        container.appendChild(div);
-      });
     }
 
     loadJobs();

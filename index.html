@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tech Jobs Dashboard</title>
+  <title>Jobs Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
   <style>
@@ -15,15 +15,16 @@
       --card: hsl(224, 71%, 9%);
       --secondary: hsl(224, 71%, 14%);
       --muted-foreground: hsl(210, 40%, 80%);
+      --text-secondary: hsl(210, 40%, 70%);
+      --text-muted: hsl(210, 40%, 50%);
     }
     body { background-color: var(--background); color: var(--foreground); }
     a { color: var(--accent); }
-    .tech-icon { width: 20px; height: 20px; display:inline-block; margin-right:0.25rem; }
   </style>
 </head>
 <body class="p-6 font-sans">
-  <h1 class="text-4xl font-bold mb-6 text-center">Últimas Vacantes de TI / IA</h1>
-  <div id="jobs-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  <h1 class="text-3xl font-bold mb-6 text-center text-primary">Últimas Vacantes</h1>
+  <div id="jobs-list" class="space-y-4 max-w-4xl mx-auto"></div>
 
   <script>
     async function loadJobs() {
@@ -31,6 +32,7 @@
       const rawData = await res.json();
       const jobsList = document.getElementById('jobs-list');
 
+      // Filtrar solo los arrays de jobs válidos
       const jobs = [];
       rawData.forEach(item => {
         try {
@@ -41,14 +43,14 @@
 
       jobs.forEach(job => {
         const div = document.createElement('div');
-        div.className = "bg-card p-5 rounded-xl shadow-lg transform hover:-translate-y-1 hover:scale-105 transition-all duration-300";
+        div.className = "bg-card p-5 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-secondary";
         div.innerHTML = `
           <a href="${job.url || '#'}" target="_blank" class="text-xl font-bold hover:text-accent">${job.title}</a>
-          <p class="text-sm text-muted-foreground mt-1">${job.company} - ${job.matchPercentage}% match</p>
-          <p class="mt-2 text-sm">${job.roleSummary}</p>
+          <p class="mt-1 text-text-secondary font-semibold">${job.company} - <span class="text-accent">${job.matchPercentage}% match</span></p>
+          <p class="mt-2 text-text-muted text-sm">${job.roleSummary}</p>
           <div class="mt-3 flex flex-wrap gap-2">
             ${job.technologies.map(tech => `
-              <span class="px-2 py-1 bg-secondary rounded-full text-xs flex items-center space-x-1">
+              <span class="px-2 py-1 bg-secondary rounded-full text-xs text-text-secondary flex items-center space-x-1">
                 <i class="fas fa-circle-dot text-accent"></i>
                 <span>${tech}</span>
               </span>

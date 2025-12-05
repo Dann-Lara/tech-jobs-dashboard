@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tech Jobs Dashboard</title>
+  <title>Jobs Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Paleta modo oscuro */
     :root {
       --background: hsl(224, 71%, 4%);
       --foreground: hsl(210, 40%, 98%);
@@ -16,16 +15,8 @@
       --secondary: hsl(224, 71%, 14%);
       --muted-foreground: hsl(210, 40%, 80%);
     }
-
-    body {
-      background-color: var(--background);
-      color: var(--foreground);
-      font-family: system-ui, sans-serif;
-    }
-
-    a:hover {
-      color: var(--accent);
-    }
+    body { background-color: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; }
+    a:hover { color: var(--accent); }
   </style>
 </head>
 <body class="min-h-screen p-6">
@@ -35,28 +26,38 @@
   </div>
 
   <script>
-    // Determinar JSON a cargar según query string
     const params = new URLSearchParams(window.location.search);
-    const type = params.get('type') || 'it'; // it o marketing
+    const type = params.get('type') || 'it';
     const jsonFile = type === 'marketing' ? 'jobsMarketing.json' : 'jobsIt.json';
 
     async function loadJobs() {
       const res = await fetch(jsonFile);
       let jobs = await res.json();
 
-      // Si tu JSON viene dentro de "text" con markdown, parsea igual que en n8n
-      jobs = jobs.flatMap(item => {
-        let txt = item.text || '';
-        txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
-        try {
-          const parsed = JSON.parse(txt);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch(e) {
-          return [];
-        }
-      });
+      // Ajuste según tipo
+      if (type === 'it') {
+        // IT JSON parse
+        jobs = jobs.flatMap(item => {
+          let txt = item.text || '';
+          txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
+          try {
+            const parsed = JSON.parse(txt);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch(e) { return []; }
+        });
+      } else {
+        // Marketing JSON
+        jobs = jobs.map(job => ({
+          title: job.title || job.text || '',
+          company: job.company || '',
+          url: job.applyUrl || '#',
+          technologies: (job.skills && job.skills.length ? job.skills : job.tags) || [],
+          matchPercentage: job.score || '-',
+          roleSummary: job.description ? job.description.replace(/<[^>]+>/g, '').substring(0, 200) + '...' : ''
+        }));
+      }
 
-      // Eliminar duplicados por title + company
+      // Eliminar duplicados
       const uniqueJobs = [...new Map(jobs.map(job => [job.title + job.company, job])).values()];
 
       const container = document.getElementById('jobs-list');
@@ -70,7 +71,7 @@
             ${job.title}
           </a>
           <p class="text-secondary mt-1">${job.company}</p>
-          <p class="text-muted-foreground mt-1 text-sm">Match: ${job.matchPercentage || '-'}%</p>
+          <p class="text-muted-foreground mt-1 text-sm">Match: ${job.matchPercentage || '-'}</p>
           <p class="mt-2 text-foreground">${job.roleSummary || ''}</p>
           <div class="mt-2 flex flex-wrap gap-2">
             ${(job.technologies || []).map(tech => `<span class="px-2 py-1 bg-secondary text-accent rounded-full text-xs">${tech}</span>`).join('')}

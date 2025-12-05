@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jobs Dashboard</title>
+  <title>Tech Jobs Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
   <style>
     :root {
       --background: hsl(224, 71%, 4%);
@@ -17,37 +18,42 @@
     }
     body { background-color: var(--background); color: var(--foreground); }
     a { color: var(--accent); }
+    .tech-icon { width: 20px; height: 20px; display:inline-block; margin-right:0.25rem; }
   </style>
 </head>
-<body class="p-6">
-  <h1 class="text-3xl font-bold mb-6">Últimas Vacantes</h1>
-  <div id="jobs-list" class="space-y-4"></div>
+<body class="p-6 font-sans">
+  <h1 class="text-4xl font-bold mb-6 text-center">Últimas Vacantes de TI / IA</h1>
+  <div id="jobs-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
   <script>
     async function loadJobs() {
-      const res = await fetch('jobs.json'); // tu JSON generado desde n8n
+      const res = await fetch('jobs.json');
       const rawData = await res.json();
       const jobsList = document.getElementById('jobs-list');
 
-      // Extraer solo los items que son arrays JSON de jobs
       const jobs = [];
       rawData.forEach(item => {
         try {
           const parsed = JSON.parse(item.text.replace(/```json/g,'').replace(/```/g,'').trim());
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            jobs.push(...parsed);
-          }
+          if (Array.isArray(parsed) && parsed.length > 0) jobs.push(...parsed);
         } catch(e) {}
       });
 
       jobs.forEach(job => {
         const div = document.createElement('div');
-        div.className = "bg-card p-4 rounded shadow hover:shadow-lg transition";
+        div.className = "bg-card p-5 rounded-xl shadow-lg transform hover:-translate-y-1 hover:scale-105 transition-all duration-300";
         div.innerHTML = `
-          <a href="${job.url || '#'}" target="_blank" class="text-lg font-semibold hover:underline">${job.title}</a>
-          <p class="text-sm text-muted-foreground">${job.company} - ${job.matchPercentage}% match</p>
-          <p class="mt-1 text-sm">${job.roleSummary}</p>
-          <p class="mt-1 text-xs text-secondary">Tecnologías: ${job.technologies.join(', ')}</p>
+          <a href="${job.url || '#'}" target="_blank" class="text-xl font-bold hover:text-accent">${job.title}</a>
+          <p class="text-sm text-muted-foreground mt-1">${job.company} - ${job.matchPercentage}% match</p>
+          <p class="mt-2 text-sm">${job.roleSummary}</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            ${job.technologies.map(tech => `
+              <span class="px-2 py-1 bg-secondary rounded-full text-xs flex items-center space-x-1">
+                <i class="fas fa-circle-dot text-accent"></i>
+                <span>${tech}</span>
+              </span>
+            `).join('')}
+          </div>
         `;
         jobsList.appendChild(div);
       });

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jobs Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --background: hsl(224, 71%, 4%);
+      --foreground: hsl(210, 40%, 98%);
+      --primary: hsl(210, 40%, 98%);
+      --accent: hsl(197, 71%, 73%);
+      --card: hsl(224, 71%, 9%);
+      --secondary: hsl(224, 71%, 14%);
+      --muted-foreground: hsl(210, 40%, 80%);
+    }
+    body { background-color: var(--background); color: var(--foreground); }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body class="p-6">
+  <h1 class="text-3xl font-bold mb-6">Últimas Vacantes</h1>
+  <div id="jobs-list" class="space-y-4"></div>
+
+  <script>
+    async function loadJobs() {
+      const res = await fetch('jobs.json'); // tu JSON generado desde n8n
+      const rawData = await res.json();
+      const jobsList = document.getElementById('jobs-list');
+
+      // Extraer solo los items que son arrays JSON de jobs
+      const jobs = [];
+      rawData.forEach(item => {
+        try {
+          const parsed = JSON.parse(item.text.replace(/```json/g,'').replace(/```/g,'').trim());
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            jobs.push(...parsed);
+          }
+        } catch(e) {}
+      });
+
+      jobs.forEach(job => {
+        const div = document.createElement('div');
+        div.className = "bg-card p-4 rounded shadow hover:shadow-lg transition";
+        div.innerHTML = `
+          <a href="${job.url || '#'}" target="_blank" class="text-lg font-semibold hover:underline">${job.title}</a>
+          <p class="text-sm text-muted-foreground">${job.company} - ${job.matchPercentage}% match</p>
+          <p class="mt-1 text-sm">${job.roleSummary}</p>
+          <p class="mt-1 text-xs text-secondary">Tecnologías: ${job.technologies.join(', ')}</p>
+        `;
+        jobsList.appendChild(div);
+      });
+    }
+
+    loadJobs();
+  </script>
+</body>
+</html>
